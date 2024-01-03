@@ -1,5 +1,6 @@
 use std::sync::mpsc::Receiver;
 
+use gl::{DEPTH_TEST, LESS, STENCIL_TEST, NOTEQUAL, KEEP, REPLACE, Gl};
 use glfw::{
   fail_on_errors, Context, Glfw, OpenGlProfileHint, Window, WindowEvent,
   WindowHint::{ContextVersionMajor, ContextVersionMinor, OpenGlProfile}
@@ -40,3 +41,16 @@ pub fn create_window() -> (Glfw, Window, Receiver<(f64, WindowEvent)>) {
 
   (glfw, window, events)
 } 
+
+pub fn create_gl(window:&mut Window) -> Gl {
+  let _gl_context = window.get_context_version();
+  let gl = Gl::load_with(&mut |s| window.get_proc_address(s) as *const std::os::raw::c_void);
+  unsafe {
+    gl.Enable(DEPTH_TEST);
+    gl.DepthFunc(LESS);
+    gl.Enable(STENCIL_TEST);
+    gl.StencilFunc(NOTEQUAL, 1, 0xFF);
+    gl.StencilOp(KEEP, KEEP, REPLACE);
+  }
+  gl
+}
