@@ -7,7 +7,7 @@ use std::mem::size_of;
 use std::hash::{Hash, Hasher};
 
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Debug, Clone, Copy)]
 #[repr(C)]
 // #[repr(C, packed)]
 //just make Vertex hold color and all the other data tbh 
@@ -16,8 +16,8 @@ use std::hash::{Hash, Hasher};
 //I actually do want color because I want te option to give the shape a solid fill
 //actually the above might be a shader thing not a vertex thing
 pub struct Vertex {
-  pub(crate) pos:[f32;3],
-  pub(crate) txt:[f32;2]
+  pub pos:[f32;3],
+  pub txt:[f32;2]
 }
 
 impl PartialEq for Vertex {
