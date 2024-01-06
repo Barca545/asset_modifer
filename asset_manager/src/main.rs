@@ -12,7 +12,9 @@ use ecs::{World, component_lib::{NormalMesh, OutlineMesh, Asset, Position}, syst
 use filesystem::{load_object, load_object_outline};
 use glfw::{Key, Action, Context, MouseButton};
 use math::Transforms;
-use crate::create::create_window;
+use polygons::{create_complex_collider, Grid};
+use render::GridMesh;
+use crate::{create::create_window, ecs::component_lib::MeshPoint};
 
 fn main() {
   //Create the world
@@ -42,21 +44,47 @@ fn main() {
     .add_resource(dragging)
     .add_resource(ShouldRender::default())
     .add_resource(program);
-    
+
   world
     .register_component::<Asset>()
+    .register_component::<MeshPoint>()
     .register_component::<NormalMesh>()
     .register_component::<OutlineMesh>()
-    .register_component::<Position>();
+    .register_component::<Position>()
+    .register_component::<Grid>()
+    .register_component::<GridMesh>();
 
   //Load the vertices and indices
   //this is where I need to handle the result by displaying it to the user
-  let (asset_vertices, asset_indices) = load_object("warrior").unwrap();
+  let name = "ball";
+  let (asset_vertices, asset_indices) = load_object(name).unwrap();
   // let (outline_vertices, outline_indices) = load_object_outline((asset_vertices.clone(), asset_indices.clone())).unwrap();
-  let (outline_vertices, outline_indices) = load_object_outline("warrior").unwrap();
+  let (outline_vertices, outline_indices) = load_object_outline(name).unwrap();
   //possibly make texture name an option or something *or* just make the outline have its own shader  
   let asset_mesh = NormalMesh::new(&gl, asset_vertices, asset_indices, "blank_texture");
-  let outline_mesh = OutlineMesh::new(&gl, outline_vertices, outline_indices, "red");
+  let outline_mesh = OutlineMesh::new(&gl, outline_vertices.clone(), outline_indices.clone(), "red");
+  // let outline_voxels = voxelize_obj(&outline_vertices, &outline_indices, 3);
+  // let collider = create_complex_collider(outline_vertices, &outline_indices);
+  // dbg!(collider);
+  // let (asset_vertices, asset_indices) = load_object("ball-polyline").unwrap();
+  // dbg!(asset_vertices);
+
+  // let mut test = 0.0;
+  // for voxel in outline_voxels.voxels() { 
+  //  let (outline_vertices, outline_indices) = load_object_outline("ball-polyline").unwrap();
+  //  let voxel_point_mesh = OutlineMesh::new(&gl, outline_vertices, outline_indices, "blank_texture");
+  
+  //  let position = voxel.coords;
+  //  dbg!(position);
+  //  world
+  //   .create_entity()
+  //   .with_component(MeshPoint).unwrap()
+  //   .with_component(Asset).unwrap()
+  //   .with_component(voxel_point_mesh).unwrap()
+  //   .with_component(Position::new(position.x as f32,0.0,position.y as f32)).unwrap();
+  // }
+
+  
 
   world
     .create_entity()
@@ -65,6 +93,15 @@ fn main() {
     .with_component(outline_mesh).unwrap()
     .with_component(Position::new(0.0,0.0,0.0)).unwrap();
 
+  //create the grid 
+  let grid = Grid::new(10, 10, 1.0);
+  let grid_mesh = GridMesh::new(&gl, &grid);
+  
+  world
+    .create_entity()
+    .with_component(grid).unwrap()
+    .with_component(grid_mesh).unwrap();
+  
   while !window.should_close(){
     glfw.poll_events();
     for (_, event) in glfw::flush_messages(&events) {

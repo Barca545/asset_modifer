@@ -1,10 +1,11 @@
-use gl::{Gl, TRIANGLES, UNSIGNED_INT, types::{GLsizei, GLvoid, GLint}};
+use gl::{Gl, TRIANGLES, UNSIGNED_INT, types::{GLsizei, GLvoid, GLint}, LINES};
 
-use super::Mesh;
+// use crate::polygons::GridMesh;
+
+use super::{Mesh, mesh::GridMesh};
 
 //test by just doing the current render then start making it draw_elements
 pub fn render_mesh(gl:&Gl, mesh:&Mesh){
-  let vertices = &mesh.vertices;
   let texture = &mesh.texture;
   let vao = &mesh.vao;
   let indices = &mesh.indices;
@@ -35,3 +36,20 @@ pub fn render_mesh(gl:&Gl, mesh:&Mesh){
 //   }
   vao.unbind(gl);
 } 
+
+pub fn render_grid_mesh(gl:&Gl, grid_mesh:&GridMesh){
+  // let texture = &mesh.texture;
+  
+  let vertices = &grid_mesh.vertices;
+  let vao = &grid_mesh.vao;
+
+  vao.bind(gl);
+
+  unsafe {
+    gl.DrawArrays(
+      LINES,
+      0,
+      vertices.len() as GLint
+    );
+  }
+}

@@ -6,6 +6,9 @@ use gl::{
 use std::mem::size_of;
 use std::hash::{Hash, Hasher};
 
+//Potential colors for a vertex
+//confirm how to make them accessible
+const RED:[f32;4] = [1.0,0.0,0.0,1.0];
 
 #[derive(Debug, Clone, Copy)]
 #[repr(C)]
@@ -17,11 +20,14 @@ use std::hash::{Hash, Hasher};
 //actually the above might be a shader thing not a vertex thing
 pub struct Vertex {
   pub pos:[f32;3],
-  pub txt:[f32;2]
+  pub txt:[f32;2],
+  pub clr:Option<[f32;4]>
 }
 
 impl PartialEq for Vertex {
   fn eq(&self, other: &Self) -> bool {
+    //Test that the position and txt coords are the same. 
+    //No need to check for color because that is not stored in the .obj file.
     self.pos == other.pos
     && self.txt == other.txt
   }
@@ -29,14 +35,15 @@ impl PartialEq for Vertex {
 
 impl Eq for Vertex {}
 
-//could do multiple from impls and make txt and option
 impl From<(f32, f32, f32, f32, f32)> for Vertex {
   fn from(value:(f32, f32, f32, f32, f32)) -> Self {
     let pos:[f32;3] = [value.0, value.1, value.2];
     let txt:[f32;2] = [value.3, value.4];
-    Self::new(pos, txt)
+    let clr = None;
+    Self::new(pos, txt, clr)
   }
 }
+
 
 impl Hash for Vertex{
   fn hash<H:Hasher>(&self, state:&mut H){
@@ -50,8 +57,8 @@ impl Hash for Vertex{
 }
 
 impl Vertex {
-  pub fn new(pos:[f32;3], txt:[f32;2]) -> Self {
-    Vertex { pos, txt }
+  pub fn new(pos:[f32;3], txt:[f32;2], clr:Option<[f32;4]>) -> Self {
+    Vertex { pos, txt, clr }
   }
 
   pub fn init_attrib_pointers(gl:&Gl) {
@@ -63,9 +70,15 @@ impl Vertex {
     Self::define_vertex_attrib_pointer(gl, stride, position, position_offset, 3);
 
     //texture
-    let size = size_of::<[f32;3]>();
+    let pos_size = size_of::<[f32;3]>();
     let texture = 1;
-    let texture_offset = position_offset + size;
+    let texture_offset = position_offset + pos_size;
+    Self::define_vertex_attrib_pointer(gl, stride, texture, texture_offset, 2);
+  
+    //color
+    let txt_size = size_of::<[f32;2]>();
+    let texture = 1;
+    let texture_offset = texture_offset + txt_size;
     Self::define_vertex_attrib_pointer(gl, stride, texture, texture_offset, 2);
   }
 

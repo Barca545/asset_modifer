@@ -30,6 +30,7 @@ impl Position {
 // }
 
 pub struct Asset;
+pub struct MeshPoint;
 
 //rendering
 pub struct NormalMesh(pub Mesh);
