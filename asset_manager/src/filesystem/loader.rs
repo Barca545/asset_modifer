@@ -75,7 +75,8 @@ pub fn load_object_outline(name:&str) -> Result<(Vec<Vertex>,Vec<u32>)> {
         mesh.texcoords[texture_offset + 1]
       ];
 
-      let vertex = Vertex::new(position, texture, None);
+      // let vertex = Vertex::new(position, texture, None);
+      let vertex = Vertex::new(position, texture, [0.0,0.0,0.0]);
       
       if let Some(index) = unique_vertices.get(&vertex){
         indices.push(*index as u32)
@@ -134,7 +135,8 @@ pub fn load_object(name:&str) -> Result<(Vec<Vertex>,Vec<u32>)> {
         mesh.texcoords[texture_offset + 1]
       ];
 
-      let vertex = Vertex::new(position, texture, None);
+      // let vertex = Vertex::new(position, texture, None);
+      let vertex = Vertex::new(position, texture, [0.0,0.0,0.0]);
       
       if let Some(index) = unique_vertices.get(&vertex){
         indices.push(*index as u32)

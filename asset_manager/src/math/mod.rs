@@ -3,6 +3,7 @@ mod aliases;
 mod transforms;
 mod camera;
 mod trigonometry;
+mod ray;
 
 pub use self::{
     point::Point,

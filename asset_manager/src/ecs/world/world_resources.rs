@@ -29,27 +29,51 @@ pub enum Selected {
   CLICKED(usize)
 }
 
-pub struct ShaderProgram(pub Program); 
+#[derive(Debug, Clone, Copy)]
+pub enum ProgramType{
+  Asset,
+  Grid 
+}
 
-impl ShaderProgram {
+pub struct ShaderPrograms{
+  pub asset: Program,
+  pub grid: Program,
+}
+
+impl ShaderPrograms {
   pub fn new(world:&World) -> Result<Self> {
     let gl = world.immut_get_resource::<Gl>().unwrap();
 
-    //might need new shaders
-    let mut normal = Program::new(&gl, "textured", "textured", FRAGMENT_SHADER).unwrap();
-    
-    normal
+    let mut asset = Program::new(&gl, "textured", "textured", FRAGMENT_SHADER).unwrap();
+
+    asset
       .with_model(gl)?
       .with_view(gl)?
       .with_projection(gl)?;
 
-    Ok(Self(normal))
+    let mut grid = Program::new(&gl, "grid", "grid", FRAGMENT_SHADER).unwrap();
+
+    grid
+      .with_model(gl)?
+      .with_view(gl)?
+      .with_projection(gl)?;
+
+    Ok(Self { 
+      asset, 
+      grid
+    })
   }
   
-  pub fn set_uniforms(&self, world:&World) {
+  pub fn set_uniforms(&self, world:&World, program_type:ProgramType) {
     let transforms = world.immut_get_resource::<Transforms>().unwrap();
     let gl = world.immut_get_resource::<Gl>().unwrap();
-    let program = self.0;
+    
+    let program;
+
+    match program_type {
+      ProgramType::Asset => program = self.asset,
+      ProgramType::Grid => program = self.grid,
+    }
 
     program.use_program(gl);
 
@@ -59,28 +83,27 @@ impl ShaderProgram {
     //Set the projection transform's value
     program.set_projection_matrix(gl, transforms.projection_transform.as_matrix());
   }
+
+  // pub fn set_model_matrix()
 }
 
 
 pub struct ShouldRender{
   pub asset:bool,
-  pub outline:bool
+  pub grid:bool
 }
 
 impl Default for ShouldRender{
   fn default() -> Self {
-    Self{
-      asset:false,
-      outline:true
-    }
+    Self::new(true, true)
   }
 }
 
 impl ShouldRender {
-  pub fn new(asset:bool, outline:bool) -> Self {
+  pub fn new(asset:bool, grid:bool) -> Self {
     Self{
       asset,
-      outline
+      grid
     }
   }
 }

@@ -9,7 +9,7 @@ pub use self::{
   vertex::Vertex,
   mesh::{Mesh, GridMesh},
   shaders::Program,
-  render_mesh::{render_mesh,render_grid_mesh}
+  render_mesh::{render_mesh,render_lines, render_cells}
   // {Program, 
   //     // Shader
   // }

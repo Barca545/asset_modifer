@@ -18,10 +18,13 @@ const RED:[f32;4] = [1.0,0.0,0.0,1.0];
 //can revisit if it becomes a problem but 
 //I actually do want color because I want te option to give the shape a solid fill
 //actually the above might be a shader thing not a vertex thing
+//idk if there is actually a reason to keep color as an option
+//could use a vertex builder patter if I really wanted ig
 pub struct Vertex {
   pub pos:[f32;3],
   pub txt:[f32;2],
-  pub clr:Option<[f32;4]>
+  // pub clr:Option<[f32;3]>
+  pub clr:[f32;3]
 }
 
 impl PartialEq for Vertex {
@@ -39,7 +42,17 @@ impl From<(f32, f32, f32, f32, f32)> for Vertex {
   fn from(value:(f32, f32, f32, f32, f32)) -> Self {
     let pos:[f32;3] = [value.0, value.1, value.2];
     let txt:[f32;2] = [value.3, value.4];
-    let clr = None;
+    // let clr = None;
+    let clr = [0.0, 0.0, 0.0];
+    Self::new(pos, txt, clr)
+  }
+}
+
+impl From<(f32, f32, f32)> for Vertex {
+  fn from(value:(f32, f32, f32)) -> Self {
+    let pos:[f32;3] = [value.0, value.1, value.2];
+    let txt:[f32;2] = [0.0, 0.0];
+    let clr = [0.0, 0.0, 0.0];
     Self::new(pos, txt, clr)
   }
 }
@@ -57,8 +70,17 @@ impl Hash for Vertex{
 }
 
 impl Vertex {
-  pub fn new(pos:[f32;3], txt:[f32;2], clr:Option<[f32;4]>) -> Self {
+  // pub fn new(pos:[f32;3], txt:[f32;2], clr:Option<[f32;3]>) -> Self {
+  //   Vertex { pos, txt, clr }
+  // }
+
+  pub fn new(pos:[f32;3], txt:[f32;2], clr:[f32;3]) -> Self {
     Vertex { pos, txt, clr }
+  }
+
+  pub fn color(&mut self, color:[f32;3]) -> Self {
+    self.clr = color;
+    *self
   }
 
   pub fn init_attrib_pointers(gl:&Gl) {
@@ -76,10 +98,10 @@ impl Vertex {
     Self::define_vertex_attrib_pointer(gl, stride, texture, texture_offset, 2);
   
     //color
+    let color = 2;
     let txt_size = size_of::<[f32;2]>();
-    let texture = 1;
-    let texture_offset = texture_offset + txt_size;
-    Self::define_vertex_attrib_pointer(gl, stride, texture, texture_offset, 2);
+    let color_offset = texture_offset + txt_size;
+    Self::define_vertex_attrib_pointer(gl, stride, color, color_offset, 3);
   }
 
   fn define_vertex_attrib_pointer(gl:&Gl, stride:usize, location:usize, offset:usize, tuple_size:GLint) {

@@ -64,7 +64,8 @@ impl Program {
   )
   }
 
-  pub fn with_model(&mut self,gl:&Gl)->Result<&mut Self>{
+  pub fn 
+  with_model(&mut self,gl:&Gl)->Result<&mut Self>{
     self.model_uniform_location = Some(self.get_uniform_location( gl, "model")?);
     Ok(self)
   }
@@ -82,6 +83,10 @@ impl Program {
   //not working because use program does not actually use program, this is getting the location
   pub fn use_program(&self, gl:&Gl) {
     unsafe { gl.UseProgram(self.id) }
+  }
+
+  pub fn unbind(&self, gl:&Gl) {
+    unsafe { gl.UseProgram(0) }
   }
 
   fn get_uniform_location(&self, gl:&Gl, name:&str) -> Result<i32> {

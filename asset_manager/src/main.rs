@@ -7,15 +7,16 @@ mod filesystem;
 mod ecs;
 
 use std::{thread, time::Duration};
-use create::create_gl;
-use ecs::{World, component_lib::{NormalMesh, OutlineMesh, Asset, Position}, systems::render, world_resources::{ShouldRender, ShaderProgram, ScreenDimensions}};
+use create::{create_gl, create_asset};
+use ecs::{World, component_lib::{NormalMesh, OutlineMesh, Asset, Position}, systems::render, world_resources::{ShouldRender, ShaderPrograms, ScreenDimensions}};
 use filesystem::{load_object, load_object_outline};
 use glfw::{Key, Action, Context, MouseButton};
-use math::Transforms;
-use polygons::{create_complex_collider, Grid};
+use math::{Transforms, Vec3};
+use polygons::{Grid, map_object};
 use render::GridMesh;
 use crate::{create::create_window, ecs::component_lib::MeshPoint};
 
+//this is where I need to handle the result by displaying it to the user
 fn main() {
   //Create the world
   let mut world = World::new();
@@ -37,7 +38,7 @@ fn main() {
 
   world.add_resource(gl.clone());
 
-  let program = ShaderProgram::new(&world).unwrap();
+  let program = ShaderPrograms::new(&world).unwrap();
   
   world  
     .add_resource(gl.clone())
@@ -46,61 +47,29 @@ fn main() {
     .add_resource(program);
 
   world
+    //type tags
     .register_component::<Asset>()
+    //meshes
     .register_component::<MeshPoint>()
     .register_component::<NormalMesh>()
+    .register_component::<GridMesh>()
     .register_component::<OutlineMesh>()
+    //position
     .register_component::<Position>()
-    .register_component::<Grid>()
-    .register_component::<GridMesh>();
+    .register_component::<Grid>();
 
-  //Load the vertices and indices
-  //this is where I need to handle the result by displaying it to the user
-  let name = "ball";
-  let (asset_vertices, asset_indices) = load_object(name).unwrap();
-  // let (outline_vertices, outline_indices) = load_object_outline((asset_vertices.clone(), asset_indices.clone())).unwrap();
-  let (outline_vertices, outline_indices) = load_object_outline(name).unwrap();
-  //possibly make texture name an option or something *or* just make the outline have its own shader  
-  let asset_mesh = NormalMesh::new(&gl, asset_vertices, asset_indices, "blank_texture");
-  let outline_mesh = OutlineMesh::new(&gl, outline_vertices.clone(), outline_indices.clone(), "red");
-  // let outline_voxels = voxelize_obj(&outline_vertices, &outline_indices, 3);
-  // let collider = create_complex_collider(outline_vertices, &outline_indices);
-  // dbg!(collider);
-  // let (asset_vertices, asset_indices) = load_object("ball-polyline").unwrap();
-  // dbg!(asset_vertices);
+  //Create the grid 
+  let cell_size = 0.1;
+  let mut grid = Grid::new(5, 5, cell_size).unwrap();
+  let mut grid_mesh = GridMesh::new(&gl, &grid);
 
-  // let mut test = 0.0;
-  // for voxel in outline_voxels.voxels() { 
-  //  let (outline_vertices, outline_indices) = load_object_outline("ball-polyline").unwrap();
-  //  let voxel_point_mesh = OutlineMesh::new(&gl, outline_vertices, outline_indices, "blank_texture");
-  
-  //  let position = voxel.coords;
-  //  dbg!(position);
-  //  world
-  //   .create_entity()
-  //   .with_component(MeshPoint).unwrap()
-  //   .with_component(Asset).unwrap()
-  //   .with_component(voxel_point_mesh).unwrap()
-  //   .with_component(Position::new(position.x as f32,0.0,position.y as f32)).unwrap();
-  // }
-
-  
-
-  world
-    .create_entity()
-    .with_component(Asset).unwrap()
-    .with_component(asset_mesh).unwrap()
-    .with_component(outline_mesh).unwrap()
-    .with_component(Position::new(0.0,0.0,0.0)).unwrap();
-
-  //create the grid 
-  let grid = Grid::new(10, 10, 1.0);
-  let grid_mesh = GridMesh::new(&gl, &grid);
+  create_asset("ball", &mut world, &mut grid, &mut grid_mesh);
   
   world
     .create_entity()
     .with_component(grid).unwrap()
-    .with_component(grid_mesh).unwrap();
+    .with_component(grid_mesh).unwrap()
+    .with_component(Position::new(0.0,0.0,0.0)).unwrap();
   
   while !window.should_close(){
     glfw.poll_events();
@@ -132,10 +101,18 @@ fn main() {
     thread::sleep(Duration::from_secs(1/30))
   }
 }
-  // it occurs to me 
-  // 1) 
-  // 2)
 
+//might be able to reuse the code for shading the cells to draw a minimap
+
+  // idk if I need to squash the vertex anymore or if the obj can remain 3d
+  //make external assets folder for each project to use
+  //update shaders to ouput a given color
+  //change lines to white
+  //--since the vertices are being colored by the grid creation this means the shader for drawing the lines needs to output a constant white color not the vertex color
+  
+  
+  //I might need a seperate shader to render each square filled in with the proper color
+  
 
   //add the server time mod
   //--for rendering each vert on the outline should get a little circle showing where it is

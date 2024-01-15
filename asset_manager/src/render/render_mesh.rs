@@ -1,8 +1,10 @@
-use gl::{Gl, TRIANGLES, UNSIGNED_INT, types::{GLsizei, GLvoid, GLint}, LINES};
+use gl::{Gl, TRIANGLES, UNSIGNED_INT, types::{GLsizei, GLvoid, GLint}, LINES, POINTS, LINE_STRIP, LINE_LOOP};
 
 // use crate::polygons::GridMesh;
 
 use super::{Mesh, mesh::GridMesh};
+
+//make a file just holding the draw mode functions
 
 //test by just doing the current render then start making it draw_elements
 pub fn render_mesh(gl:&Gl, mesh:&Mesh){
@@ -13,11 +15,9 @@ pub fn render_mesh(gl:&Gl, mesh:&Mesh){
   //do I bind texture before or after vao
   texture.bind(gl);
   vao.bind(gl);
-  
-  //make a file just holding the draw mode functions
 
-  // //bind the model transform
-  // program.set_uniform_matrix4fv(gl, uniform_locations.model, &transforms.get_model_transform(&render_position, 1.0));
+
+  //Bind the model transform
   unsafe {
     gl.DrawElements(
       TRIANGLES,
@@ -27,27 +27,33 @@ pub fn render_mesh(gl:&Gl, mesh:&Mesh){
     );
   }
 
-//   unsafe {
-//     gl.DrawArrays(
-//       TRIANGLES,
-//       0,
-//       vertices.len() as GLint,
-//     );
-//   }
   vao.unbind(gl);
 } 
 
-pub fn render_grid_mesh(gl:&Gl, grid_mesh:&GridMesh){
-  // let texture = &mesh.texture;
-  
-  let vertices = &grid_mesh.vertices;
-  let vao = &grid_mesh.vao;
+pub fn render_lines(gl:&Gl, grid_mesh:&GridMesh){
+  let vertices = &grid_mesh.lines.vertices;
+  let vao = &grid_mesh.lines.vao;
 
   vao.bind(gl);
 
   unsafe {
     gl.DrawArrays(
       LINES,
+      0,
+      vertices.len() as GLint
+    );
+  }
+}
+
+pub fn render_cells(gl:&Gl, grid_mesh:&GridMesh){
+  let vertices = &grid_mesh.cells.vertices;
+  let vao = &grid_mesh.cells.vao;
+
+  vao.bind(gl);
+
+  unsafe {
+    gl.DrawArrays(
+      TRIANGLES,
       0,
       vertices.len() as GLint
     );
