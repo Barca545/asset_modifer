@@ -6,7 +6,8 @@ use nalgebra_glm::{
   identity as identity_glm, 
   look_at as look_at_glm, 
   scale as scale_glm, 
-  translate as translate_glm
+  translate as translate_glm,
+  inverse as inverse_glm
 };
 
 use nalgebra::Perspective3;
@@ -37,4 +38,8 @@ pub fn translate(matrix:&Mat4, position:&Vec3) -> Mat4 {
 ///Scales a matrix by a given scale factor.
 pub fn scale(matrix:&Mat4, scale_factor:f32) -> Mat4 {
   scale_glm(matrix,&Vec3::new(scale_factor, scale_factor, scale_factor))
+}
+
+pub fn inverse(matrix:&Mat4) -> Mat4{
+  inverse_glm(matrix)
 }

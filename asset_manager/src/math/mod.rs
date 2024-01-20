@@ -7,7 +7,8 @@ mod ray;
 
 pub use self::{
     point::Point,
-    aliases::{Mat4,Vec2,Vec3,Vec4},
+    aliases::{Mat4,Vec2,Vec3,Vec4, inverse},
     trigonometry::radians,
-    transforms::{Transforms, calculate_model_transform}
+    transforms::{Transforms, calculate_model_transform},
+    ray::RayCast
 };

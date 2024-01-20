@@ -2,6 +2,7 @@ use std::{path::{Path, PathBuf}, collections::HashMap, fs::File, io::Read, ffi::
 
 use eyre::Result;
 use image::{io::Reader, DynamicImage};
+use tobj::Material;
 
 use crate::render::Vertex;
 use crate::errors::FilesystemErrors;
@@ -10,33 +11,7 @@ use crate::errors::FilesystemErrors;
 // https://blender.stackexchange.com/questions/60600/project-3d-object-on-a-plane
 //arguably not a loader function so consider moving
 // (vertices, indices):(Vec<Vertex>,Vec<u32>)
-pub fn load_object_outline(name:&str) -> Result<(Vec<Vertex>,Vec<u32>)> {
-  // //Create new vectors to hold the outline verts and indices
-  // let mut outline_vertices = Vec::default();
-  // let mut outline_indices = Vec::default();
-
-  // //Sort the vertices
-  // for index in indices{
-  //   let index = index as usize;
-  //   let mut vertex = vertices[index];
-  //   let vertex_y = vertex.pos[1];
-    
-  //   let outline_index = index as u32;
-  //   vertex.pos[1] = 0.0;
-  //   outline_vertices.push(vertex);
-  //   outline_indices.push(outline_index);
-
-
-  //   //Discard every vertex with not on the XZ-plane and every vertex inside the shape
-
-  //   //unsure the second part is necessary, if it is, I need a second test
-  //   // if vertex_y > 0.0 {
-  //   //   let outline_index = index as u32;
-  //   //   outline_vertices.push(vertex);
-  //   //   outline_indices.push(outline_index);
-  //   // }  
-  // }
-  // Ok((outline_vertices,outline_indices))
+pub fn load_object_outline(name:&str) -> Result<(Vec<Vertex>,Vec<u32>, Vec<Material>)> {
   let path_string = name_to_path_string(name, "obj");
   let path = Path::new(&path_string);
   
@@ -51,8 +26,8 @@ pub fn load_object_outline(name:&str) -> Result<(Vec<Vertex>,Vec<u32>)> {
   let mut lowest_y = 0.0;
   let mut unique_vertices = HashMap::new();
   
-  let (models,_) = tobj::load_obj(path, load_options)?;
-  
+  let (models, materials) = tobj::load_obj(path, load_options)?;
+
   for model in &models{
     let mesh = &model.mesh;
 
@@ -62,7 +37,7 @@ pub fn load_object_outline(name:&str) -> Result<(Vec<Vertex>,Vec<u32>)> {
       
       let position = [
         mesh.positions[position_offset],
-        // mesh.positions[position_offset + 1],
+        //Squash the obj onto the xz plane
         0.0,
         mesh.positions[position_offset + 2],
       ];
@@ -74,12 +49,19 @@ pub fn load_object_outline(name:&str) -> Result<(Vec<Vertex>,Vec<u32>)> {
         mesh.texcoords[texture_offset],
         mesh.texcoords[texture_offset + 1]
       ];
+      
+      //use or so if not material nothing happens don't set to zero
+      let material_id = mesh.material_id.unwrap_or(0);
 
-      // let vertex = Vertex::new(position, texture, None);
-      let vertex = Vertex::new(position, texture, [0.0,0.0,0.0]);
+      //reconfigure the vertex to take the material id
+      //then export the materials vector and store it somewhere,
+      //when I map the object give that fn the materials vector and get the name of the material
+      //then map the material
+      
+      let vertex = Vertex::new(position, texture, [0.0,0.0,0.0], material_id);     
       
       if let Some(index) = unique_vertices.get(&vertex){
-        indices.push(*index as u32)
+        indices.push(*index as u32);
       }
       else {
         let index = vertices.len();
@@ -94,7 +76,7 @@ pub fn load_object_outline(name:&str) -> Result<(Vec<Vertex>,Vec<u32>)> {
     vertex.pos[1] += lowest_y.abs();
   }
 
-  Ok((vertices,indices))
+  Ok((vertices,indices, materials?))
 }
 
 pub fn load_object(name:&str) -> Result<(Vec<Vertex>,Vec<u32>)> {
@@ -135,8 +117,7 @@ pub fn load_object(name:&str) -> Result<(Vec<Vertex>,Vec<u32>)> {
         mesh.texcoords[texture_offset + 1]
       ];
 
-      // let vertex = Vertex::new(position, texture, None);
-      let vertex = Vertex::new(position, texture, [0.0,0.0,0.0]);
+      let vertex = Vertex::new(position, texture, [0.0,0.0,0.0], 0);
       
       if let Some(index) = unique_vertices.get(&vertex){
         indices.push(*index as u32)

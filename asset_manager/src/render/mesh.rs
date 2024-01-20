@@ -47,10 +47,6 @@ impl Mesh {
   }
 }
 
-//ok what I want to do is draw the grid lines which can be done using the prior method and then shade them in
-//this grid mesh struct should hold a cell mesh and a line mesh
-//render the lines over (after) the grid
-//might need to change the line color
 pub struct GridMesh{
   pub cells:CellMesh,
   pub lines:LineMesh
@@ -86,8 +82,8 @@ impl CellMesh {
 
     let mut vertices = Vec::default();
 
-    for i in (-height_bound..height_bound).rev() {
-      for j in (-width_bound..width_bound).rev() {
+    for i in -height_bound..height_bound {
+      for j in -width_bound..width_bound {
         //Convert the coordinates into floats
         let x = j as f32 * cell_size;
         let y = 0.0;
@@ -178,14 +174,14 @@ impl LineMesh {
 
     let mut vertices = Vec::default();
 
-    for i in (-height_bound..height_bound).rev() {
-      for j in (-width_bound..width_bound).rev() {
+    for i in -height_bound..height_bound {
+      for j in -width_bound..width_bound {
         //Convert the coordinates into floats
         let x = j as f32 * cell_size;
         //render it *slightly* higher than the cells so it is on top
         let y = 0.001;
         let z = i as f32 * cell_size;
-        let color = [1.0,0.0,0.0];
+        let color = [0.0,0.0,0.0];
 
         //Create the 8 vertices of a grid square.
         let vertex_1= Vertex::from((x, y, z)).color(color);

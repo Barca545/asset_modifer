@@ -24,7 +24,8 @@ pub struct Vertex {
   pub pos:[f32;3],
   pub txt:[f32;2],
   // pub clr:Option<[f32;3]>
-  pub clr:[f32;3]
+  pub clr:[f32;3],
+  pub material_id: usize
 }
 
 impl PartialEq for Vertex {
@@ -44,7 +45,8 @@ impl From<(f32, f32, f32, f32, f32)> for Vertex {
     let txt:[f32;2] = [value.3, value.4];
     // let clr = None;
     let clr = [0.0, 0.0, 0.0];
-    Self::new(pos, txt, clr)
+    let material_id = 0;
+    Self::new(pos, txt, clr, material_id)
   }
 }
 
@@ -53,7 +55,8 @@ impl From<(f32, f32, f32)> for Vertex {
     let pos:[f32;3] = [value.0, value.1, value.2];
     let txt:[f32;2] = [0.0, 0.0];
     let clr = [0.0, 0.0, 0.0];
-    Self::new(pos, txt, clr)
+    let material_id = 0;
+    Self::new(pos, txt, clr, material_id)
   }
 }
 
@@ -74,8 +77,8 @@ impl Vertex {
   //   Vertex { pos, txt, clr }
   // }
 
-  pub fn new(pos:[f32;3], txt:[f32;2], clr:[f32;3]) -> Self {
-    Vertex { pos, txt, clr }
+  pub fn new(pos:[f32;3], txt:[f32;2], clr:[f32;3], material_id: usize) -> Self {
+    Vertex { pos, txt, clr, material_id }
   }
 
   pub fn color(&mut self, color:[f32;3]) -> Self {

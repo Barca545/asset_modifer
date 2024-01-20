@@ -1,11 +1,11 @@
-use super::{Vec3, radians};
+use super::Vec3;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Camera {
   pub position:Vec3,
   pub target:Vec3,
   pub up:Vec3,
-  front:Vec3
+  // front:Vec3
 }
 
 impl Camera {
@@ -26,7 +26,12 @@ impl Camera {
     let up:Vec3 = right.cross(&front).normalize();
     let target:Vec3 = position + front;
 
-    Camera { position, target, up, front }
+    Camera { 
+      position, 
+      target, 
+      up, 
+      // front 
+    }
   }
 }
 

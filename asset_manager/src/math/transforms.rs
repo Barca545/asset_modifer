@@ -3,12 +3,13 @@ use super::{radians, aliases::{Perspective, identity, translate, scale, look_at}
 //might make the most sense to make the model transform something the entity holds instead of something the global struct holds
 //also restructure this and the camera class to match the ecs one in GITGD's tutorial repo
 
+#[derive(Debug, Clone, Copy)]
 pub struct Transforms {
   pub projection_transform:Perspective,
   pub view_transform:Mat4,
   //fov and camera will be used when I make a camera system
   // fov:f32,
-  // camera:Camera
+  pub camera:Camera
 }
 
 impl Transforms {
@@ -22,8 +23,13 @@ impl Transforms {
       projection_transform,
       view_transform,
       // fov,
-      // camera
+      camera
     }
+  }
+
+  pub fn update_view(&mut self, camera:&Camera){
+    self.view_transform = Self::calculate_view_transform(camera);
+    self.camera = *camera;
   }
 
   fn calculate_view_transform(camera:&Camera) -> Mat4 {
