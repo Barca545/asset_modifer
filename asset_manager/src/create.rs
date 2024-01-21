@@ -1,26 +1,14 @@
-use std::sync::mpsc::Receiver;
+use std::{sync::mpsc::Receiver, path::PathBuf};
 
-use gl::{DEPTH_TEST, LESS, STENCIL_TEST, NOTEQUAL, KEEP, REPLACE, Gl};
+use gl::{DEPTH_TEST, Gl};
 use glfw::{
   fail_on_errors, Context, Glfw, OpenGlProfileHint, Window, WindowEvent,
   WindowHint::{ContextVersionMajor, ContextVersionMinor, OpenGlProfile}
 };
 
-use crate::{ecs::{world_resources::ScreenDimensions, World, component_lib::{NormalMesh, Asset, Position}}, filesystem::load_object, polygons::{map_object, Grid}, render::GridMesh};
+use eyre::Result;
 
-// #[derive(Debug, Clone, Copy)]
-// pub struct ScreenDimensions {
-//   pub height:i32,
-//   pub width:i32,
-//   pub aspect:f32
-// }
-
-// impl ScreenDimensions {
-//   pub fn new(height:i32, width:i32) -> Self {
-//     let aspect = width as f32 / height as f32;
-//     ScreenDimensions { height, width, aspect }
-//   }
-// }
+use crate::{ecs::{world_resources::ScreenDimensions, World, component_lib::{NormalMesh, Asset, Position}}, filesystem::load_object_with_material, polygons::{Grid, map_object_with_material}, render::GridMesh};
 
 pub fn create_window(world:&World) -> (Glfw, Window, Receiver<(f64, WindowEvent)>) {
   let screen_dimensions = world.immut_get_resource::<ScreenDimensions>().unwrap();
@@ -55,21 +43,36 @@ pub fn create_gl(window:&mut Window) -> Gl {
   gl
 }
 
-pub fn create_asset(name:&str, world:&mut World, grid:&mut Grid, grid_mesh:&mut GridMesh){
+pub fn create_asset(pathbuf:PathBuf, world:&mut World) -> Result<()>{
   let gl = world.immut_get_resource::<Gl>().unwrap();
-  //Load the asset's vertices and indices
-  let (asset_vertices, asset_indices) = load_object(name).unwrap();
 
-  //Map the object onto the grid
-  map_object(&gl,&asset_vertices, &asset_indices, grid, grid_mesh);
+  //really I should I take in the path
+
+  //Load the asset's vertices and indices
+  let (asset_vertices, asset_indices, materials) = load_object_with_material(pathbuf).unwrap();
+
+  let mut query = world.query();
+  let entities = query.with_component::<Grid>()?.run_entity();
+
+  {
+    let entity = &entities[0];
+
+    let mut grid = entity.mut_get_component::<Grid>()?;
+    let mut grid_mesh = entity.mut_get_component::<GridMesh>()?;
+
+    //Map the object onto the grid
+    map_object_with_material(&gl,&asset_vertices, &asset_indices, &materials, &mut grid, &mut grid_mesh);
+  } 
 
   //Create the asset's mesh 
   let asset_mesh = NormalMesh::new(&gl, asset_vertices, asset_indices, "blank_texture");
-
+  
   //Add the object to the world
   world
     .create_entity()
     .with_component(Asset).unwrap()
     .with_component(asset_mesh).unwrap()
     .with_component(Position::new(0.0,0.0,0.0)).unwrap();
+
+  Ok(())
 }

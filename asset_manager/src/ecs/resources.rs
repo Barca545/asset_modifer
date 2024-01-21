@@ -1,7 +1,6 @@
 use std::{
   any::{Any, TypeId},
-  collections::HashMap,
-  path::{Path, PathBuf}
+  collections::HashMap
 };
 
 #[derive(Default, Debug)]
@@ -38,15 +37,6 @@ impl Resource {
     let typeid:TypeId = TypeId::of::<T>();
     self.data.remove(&typeid);
   }
-}
-
-fn resource_name_to_path(root_dir:&Path, location:&str) -> PathBuf {
-  let mut path:PathBuf = root_dir.into();
-
-  for part in location.split("/") {
-    path = path.join(part)
-  }
-  path
 }
 
 #[cfg(test)]

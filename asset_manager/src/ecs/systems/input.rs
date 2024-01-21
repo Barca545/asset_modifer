@@ -1,7 +1,7 @@
 use eyre::Result;
 use gl::Gl;
 
-use crate::{ecs::World, input_manager::InputManager, math::{Transforms, Vec3}, polygons::{Grid, Terrain}, render::GridMesh};
+use crate::{ecs::World, input_manager::{InputManager, Mode}, math::{Transforms, Vec3}, polygons::{Grid, Terrain}, render::GridMesh};
 
 pub fn input(world:&mut World) -> Result<()>{
   camera_input(world)?;
@@ -16,7 +16,8 @@ fn camera_input(world:&mut World) -> Result<()> {
   //unsure I need to clone here, might just be able to deref it and change it directly
   let mut camera = world.immut_get_resource::<Transforms>().unwrap().camera.clone();
   let input_manager = world.mut_get_resource::<InputManager>().unwrap();
-  let camera_speed = 0.001;
+  //these need to be values
+  let camera_speed = 0.005;
   let scroll_speed = 0.6;
 
   //Update the camera position 
@@ -55,8 +56,11 @@ fn camera_input(world:&mut World) -> Result<()> {
 fn mouse_input(world:&mut World) -> Result<()> {
   let input_manager = world.mut_get_resource::<InputManager>().unwrap();
 
-  //this is actually where the logic for checking if a terrain is set/if it should update the grid  should go not in the grid input
-
+  //this is actually where the logic for checking if a terrain is set/if it should update the grid  
+  // should go not in the grid input
+  if let Mode::Drawing(mode) = &input_manager.mode {
+  }
+  
   Ok(())
 }
 
@@ -105,10 +109,6 @@ fn update_grid_cells(world:&mut World) -> Result<()> {
   let gl = world.immut_get_resource::<Gl>().unwrap().clone();
   let grid_input = world.mut_get_resource::<InputManager>().unwrap();
 
-  // let indices = world.mut_get_resource::<InputManager>().unwrap().grid.target_cells.clone();
-  // dbg!(indices);
-
-  //terrain might just need a none option tbh
   let mut setting_terrain = Terrain::Passable;
   let mut indices = Vec::default();
 
@@ -133,20 +133,20 @@ fn update_grid_cells(world:&mut World) -> Result<()> {
 
     match setting_terrain {
       Terrain::Passable => {
-        //should be blue
+        // Turn the cell blue
         grid.cells[index] = Terrain::Passable;
         grid_mesh.color_cell(&gl, index,[0.0,0.0,1.0]);
       },
       Terrain::Impassable => {
+        // Turn the cell red
         grid.cells[index] = Terrain::Impassable;
         grid_mesh.color_cell(&gl, index,[1.0,0.0,0.0]);
       },    
       Terrain::Bush => {
-        //should be green
+        // Turn the cell green
         grid.cells[index] = Terrain::Bush;
         grid_mesh.color_cell(&gl, index,[0.0,1.0,0.0]);
       },
-      
     }   
   }
   Ok(())

@@ -1,12 +1,12 @@
-use std::collections::HashMap;
-
-use gl::Gl;
-
 use crate::{render::{Vertex, GridMesh}, math::Vec3};
-
+use std::collections::HashMap;
+use gl::Gl;
+use tobj::Material;
 use eyre::Result;
+use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Clone, Copy, Default, PartialEq)]
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
 pub enum Terrain{
   #[default]
   Passable,
@@ -16,6 +16,7 @@ pub enum Terrain{
 
 /// The grid begins with the top left cell and is zero indexed.
 ///Cell size is both the height and width of a cell since the cells are squares.
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Grid{
   pub num_columns: usize,
   pub num_rows: usize,
@@ -146,6 +147,82 @@ pub fn map_object(gl:&Gl, object_vertices:&Vec<Vertex>, object_indices:&Vec<u32>
         //Turn the cell green
         grid.cells[index] = Terrain::Impassable;
         grid_mesh.color_cell(gl, index,[0.0,1.0,0.0]);
+      }
+    }
+  }
+}
+
+pub fn map_object_with_material(
+  gl:&Gl, 
+  object_vertices:&Vec<Vertex>, 
+  object_indices:&Vec<u32>, 
+  materials:&Vec<Material>,
+  grid:&mut Grid, 
+  grid_mesh:&mut GridMesh
+)
+  { 
+  let mut overlapped_indices: HashMap<usize, Terrain> = HashMap::new();
+  //Extract the vertex coordinates 
+  for index in object_indices{
+    let vertex = object_vertices[*index as usize];
+    
+    //Get the vertex's position values and convert them into a Vec3
+    let vert_x = vertex.pos[0];
+    let vert_y = vertex.pos[1];
+    let vert_z = vertex.pos[2];
+    let position = Vec3::new(vert_x, vert_y, vert_z);
+
+    //Get the index of the cell containing the vertex
+    let index = grid.get_cell_index(position);
+
+    //Check the mtl info to see the material type
+    //Color the vertex: 
+    // - BLUE for passable
+    // - RED for impassable
+    // - GREEN for bushes
+
+    let material = &materials[vertex.material_id].name;
+    dbg!(vertex.material_id);
+    dbg!(material);
+
+    if material == "Passable"{
+      overlapped_indices.insert(index, Terrain::Passable);
+    }
+    else if material == "Impassable"{
+      overlapped_indices.insert(index, Terrain::Impassable);
+    }
+    else if material == "Bush"{
+       overlapped_indices.insert(index, Terrain::Bush);
+    }
+    //need some stage where if two points overlap but one is bush or impassable 
+    // then that overwrites passable and impassable overwrites bush
+  }
+
+  //Update the cell terrain info, mesh and color 
+  for (index, terrain) in overlapped_indices {
+    match terrain {
+      Terrain::Passable => {
+        //Confirm the cell does not already have a terrain type that takes priority (Impassable or Brush)
+        if grid.cells[index] != Terrain::Impassable || grid.cells[index] != Terrain::Bush {
+          //Turn the cell blue
+          grid.cells[index] = Terrain::Passable;
+          grid_mesh.color_cell(gl, index,[0.0,0.0,1.0]);
+        }
+      },
+      Terrain::Impassable => {
+        //Impassable has no terrain types that take priority
+        //Turn the cell red
+        grid.cells[index] = Terrain::Impassable;
+        grid_mesh.color_cell(gl, index,[1.0,0.0,0.0]);
+      },
+      
+      Terrain::Bush => {
+        //Confirm the cell does not already have a terrain type that takes priority (Impassable or Brush)
+        if grid.cells[index] != Terrain::Impassable {
+          //Turn the cell green
+          grid.cells[index] = Terrain::Bush;
+          grid_mesh.color_cell(gl, index,[0.0,1.0,0.0]);
+        }
       }
     }
   }

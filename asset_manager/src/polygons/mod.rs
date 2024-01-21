@@ -5,5 +5,5 @@ mod grid;
 
 pub use self::{
     // clipping::create_complex_collider,
-    grid::{Grid, map_object, Terrain}
+    grid::{Grid, map_object, map_object_with_material, Terrain}
 };

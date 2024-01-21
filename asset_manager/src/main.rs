@@ -10,8 +10,9 @@ mod input_manager;
 use std::{thread, time::Duration};
 use create::{create_gl, create_asset};
 use ecs::{World, component_lib::{NormalMesh, OutlineMesh, Asset, Position}, systems::{render, input}, world_resources::{ShouldRender, ShaderPrograms, ScreenDimensions}};
+use filesystem::open_file_dialog;
 use glfw::{Key, Action, Context, MouseButton};
-use input_manager::{InputManager, MouseInput, MouseRay};
+use input_manager::{InputManager, MouseRay, Mode, DrawMode};
 use math::Transforms;
 use polygons::{Grid, Terrain};
 use render::GridMesh;
@@ -25,9 +26,6 @@ fn main() {
   //Define the viewport and create the transforms
   let screen_dimensions = ScreenDimensions::new(1280, 720);
   let transforms = Transforms::new(&screen_dimensions.aspect);
-
-  //probably needs to be wrapped in a struct
-  // let mut dragging = false;
   
   world
     .add_resource(screen_dimensions)
@@ -43,7 +41,6 @@ fn main() {
   
   world  
     .add_resource(gl.clone())
-    // .add_resource(dragging)
     .add_resource(ShouldRender::default())
     .add_resource(program)
     .add_resource(InputManager::new());
@@ -61,33 +58,26 @@ fn main() {
     .register_component::<Grid>();
 
   //Create the grid 
-  let cell_size = 0.5;
-  let mut grid = Grid::new(5, 5, cell_size).unwrap();
-  let mut grid_mesh = GridMesh::new(&gl, &grid);
+  //this can go into one function
+  let cell_size = 0.2;
+  let grid = Grid::new(20, 20, cell_size).unwrap();
+  let grid_mesh = GridMesh::new(&gl, &grid);
 
-  // grid_mesh.color_cell(&gl, 1, [1.0,0.0,0.0]);
-
-  //I think I either need to flatten the object when I load it in *or* use a different projection 
-  //the current projection causes problematic distortion
-  create_asset("ball", &mut world, &mut grid, &mut grid_mesh);
-  
   world
     .create_entity()
     .with_component(grid).unwrap()
     .with_component(grid_mesh).unwrap()
     .with_component(Position::new(0.0,0.0,0.0)).unwrap();
+
+  //I think I either need to flatten the object when I load it in *or* use a different projection 
+  //the current projection causes problematic distortion
+  // create_asset("map_test", &mut world).unwrap();
   
   while !window.should_close(){
     glfw.poll_events();
     for (_, event) in glfw::flush_messages(&events) {
       match event {
         glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => window.set_should_close(true),
-        // glfw::WindowEvent::MouseButton(MouseButton::Button1, Action::Press, _) => {
-        //   dragging = true
-        // },
-        // glfw::WindowEvent::MouseButton(MouseButton::Button1, Action::Release, _) => {
-        //   dragging = false
-        // },
         glfw::WindowEvent::Key(Key::T, _,  Action::Press, _) => {
           let should_render = world.mut_get_resource::<ShouldRender>().unwrap();
           should_render.asset = !should_render.asset;
@@ -129,18 +119,32 @@ fn main() {
           let input_manager = world.mut_get_resource::<InputManager>().unwrap();
           input_manager.camera.zoom = Some(y as f32);
         },
+        glfw::WindowEvent::Key(Key::D, _,  Action::Press, _) => {
+          //Switch terrain type to passable
+          let input_manager = world.mut_get_resource::<InputManager>().unwrap();
+          input_manager.mode = Mode::Drawing(DrawMode::Dragging)
+        },
+        glfw::WindowEvent::Key(Key::D, _,  Action::Release, _) => {
+          //Switch terrain type to passable
+
+          //only add if a terrain is also set, 
+          // then I can update the code that does drawing to check the drawing mode instead of terrain
+          let input_manager = world.mut_get_resource::<InputManager>().unwrap();
+          input_manager.mode = Mode::Drawing(DrawMode::Clicking)
+        },
         glfw::WindowEvent::CursorPos(x,y) => {
-          //so really this should update mouse ray because conceivable other stuff will use it, the input system should differentiate so indices are only caluculated on click
-          // let screen_dimensions = world.immut_get_resource::<ScreenDimensions>().unwrap();
-          // let transforms = world.immut_get_resource::<Transforms>().unwrap();
-          // let ray = MouseRay::new(x, y, &screen_dimensions, &transforms);
-          // let input_manager = world.mut_get_resource::<InputManager>().unwrap();
-          // input_manager.mouse.ray = Some(ray);
-        }
-        //add functionality to click to change terrain
-        //this is really where the stuff currently in the mouse input should go, 
-        // mouse input should just set the mouse ray arguably some of the code in the above arm should go into mouse input
-        // make a terrain selector
+          //Create the mouse's ray
+          let screen_dimensions = world.immut_get_resource::<ScreenDimensions>().unwrap();
+          let transforms = world.immut_get_resource::<Transforms>().unwrap();
+          let ray = MouseRay::new(x, y, &screen_dimensions, &transforms);
+          
+          //Add the ray to the input manager
+          let input_manager = world.mut_get_resource::<InputManager>().unwrap();
+          
+          if input_manager.mode == Mode::Drawing(DrawMode::Dragging) {
+            input_manager.mouse.ray = Some(ray);
+          }
+        },
         glfw::WindowEvent::MouseButton(MouseButton::Button1, Action::Press, _) => {
           let screen_dimensions = world.immut_get_resource::<ScreenDimensions>().unwrap();
           let transforms = world.immut_get_resource::<Transforms>().unwrap();
@@ -170,7 +174,14 @@ fn main() {
           let input_manager = world.mut_get_resource::<InputManager>().unwrap();
           input_manager.grid.setting_terrain = None
         },
-
+        glfw::WindowEvent::Key(Key::O, _,  Action::Press, _) => {
+          //Get the file path
+          //I think the pathbuf needs to also save the path to a resource or something so other systems can use it
+          let pathbuf = open_file_dialog().unwrap();
+          
+          //Load the asset into the world and map it
+          create_asset(pathbuf, &mut world).unwrap();
+        }
         _ => {}
       }
     }
@@ -184,17 +195,18 @@ fn main() {
   }
 }
 
-
-//reevalutate the projection/squash the images to avoid the distortion from the projection
-//add loading from files
-//add ability to separate models and materials
+//add file browser
+// dim the colors a bit because they're too bright
 //on scroll set camera target to where the mouse is pointing
+// add saving
+//figure out how to deal with the fact bush is a type of passable
 // 5) add the ability to load from a file instead of having to hard code the file path
 // 6) add saving
 // 7) Add the ability to map different types of terrain instead of just "passable"/"impassable" 
 // by checking the material associated with a vertex 
 //add file system access
-//set up hot reloading
 //add saving
+//set up hot reloading
 //ensure interoperability with the game
 //add GUI???
+// make a terrain selector

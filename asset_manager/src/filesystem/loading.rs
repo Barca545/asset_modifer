@@ -1,19 +1,27 @@
 use std::{path::{Path, PathBuf}, collections::HashMap, fs::File, io::Read, ffi::CString};
-
 use eyre::Result;
 use image::{io::Reader, DynamicImage};
 use tobj::Material;
-
+use rfd::FileDialog;
 use crate::render::Vertex;
 use crate::errors::FilesystemErrors;
+
+///Open a file browser and return the path to the file as a `PathBuf`.
+pub fn open_file_dialog() -> Option<PathBuf> {
+  if let Some(pathbuf) = FileDialog::new().pick_file() {
+    Some(pathbuf)
+  }
+  else {
+    None
+  }
+}
 
 // also look into exporting a 2d outline from Blender
 // https://blender.stackexchange.com/questions/60600/project-3d-object-on-a-plane
 //arguably not a loader function so consider moving
 // (vertices, indices):(Vec<Vertex>,Vec<u32>)
-pub fn load_object_outline(name:&str) -> Result<(Vec<Vertex>,Vec<u32>, Vec<Material>)> {
-  let path_string = name_to_path_string(name, "obj");
-  let path = Path::new(&path_string);
+pub fn load_object_with_material(path:PathBuf) -> Result<(Vec<Vertex>,Vec<u32>, Vec<Material>)> {
+  let path = path.as_path();
   
   let load_options = &tobj::LoadOptions {
     single_index: true,
@@ -38,7 +46,7 @@ pub fn load_object_outline(name:&str) -> Result<(Vec<Vertex>,Vec<u32>, Vec<Mater
       let position = [
         mesh.positions[position_offset],
         //Squash the obj onto the xz plane
-        0.0,
+        0.01,
         mesh.positions[position_offset + 2],
       ];
       if position[1] < lowest_y{
@@ -52,11 +60,6 @@ pub fn load_object_outline(name:&str) -> Result<(Vec<Vertex>,Vec<u32>, Vec<Mater
       
       //use or so if not material nothing happens don't set to zero
       let material_id = mesh.material_id.unwrap_or(0);
-
-      //reconfigure the vertex to take the material id
-      //then export the materials vector and store it somewhere,
-      //when I map the object give that fn the materials vector and get the name of the material
-      //then map the material
       
       let vertex = Vertex::new(position, texture, [0.0,0.0,0.0], material_id);     
       
@@ -105,7 +108,8 @@ pub fn load_object(name:&str) -> Result<(Vec<Vertex>,Vec<u32>)> {
       
       let position = [
         mesh.positions[position_offset],
-        mesh.positions[position_offset + 1],
+        // mesh.positions[position_offset + 1],
+        0.0,
         mesh.positions[position_offset + 2],
       ];
       if position[1] < lowest_y{

@@ -88,7 +88,8 @@ impl CellMesh {
         let x = j as f32 * cell_size;
         let y = 0.0;
         let z = i as f32 * cell_size;
-        let color = [0.5,0.5,0.5];
+        // let color = [0.5,0.5,0.5];
+        let color = [0.0,0.0,1.0];
 
         let vertex_1= Vertex::from((x, y, z)).color(color);
         let vertex_2= Vertex::from((x+cell_size, y, z)).color(color);
